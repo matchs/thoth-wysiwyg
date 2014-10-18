@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<script src="../dist/thoth-wysiwyg-0.1.0-nightly.js" type="text/javascript" charset="utf-8"></script>
+	<title></title>
+</head>
+<body>
+	<div id="content">
+	</div>
+	
+
+</body>
+<script>
+	var $editor = document.getElementById('editor');
+	var doc = new DOC();
+
+	var s = new SECTION('section');
+	var p = new PARAGRAPH('p');
+	var p2 = new PARAGRAPH('p');
+	
+	p.appendInline(new INLINE('#txt-node', "That's a test!"));
+	p2.appendInline(new INLINE('#txt-node', "That's another paragraph"));
+	s.appendParagraph(p);
+	s.appendParagraph(p2);
+	doc.appendSection(s)
+	var content = doc.render();
+
+	document.getElementById('content').appendChild(content);
+
+
+</script>
+</html>
