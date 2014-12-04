@@ -7,11 +7,32 @@
 <body>
 	<div id="content">
 	</div>
+
+	<div>
+	  <ul>
+	    <li>One</li>
+	    <li>Two</li>
+	  </ul>
+	  <div>
+	    <p id="foo">Paragraph</p>
+	    <div>
+	      <b>
+	        <i>Text</i>
+	      </b>
+	      <u>Underline</u>
+	    </div>
+	  </div>
+	</div>
+
+	<p id="root">
+	  I am not in danger, <b>Skyler</b>. <b><u>I am <i>the danger</i></u></b>.
+	</p>
+
 	
 
 </body>
 <script>
-	var $editor = document.getElementById('editor');
+	/*var $editor = document.getElementById('editor');
 	var doc = new DOC();
 
 	var s = new SECTION('section');
@@ -25,8 +46,9 @@
 	doc.appendSection(s)
 	var content = doc.render();
 
-	document.getElementById('content').appendChild(content);
+	document.getElementById('content').appendChild(content);*/
 
+	buildTree(document.getElementById('root'));
 
 </script>
 </html>
