@@ -28,6 +28,9 @@ var config = {
 	],
 	"inlines" : [
 		{
+			"name":"A"
+		},
+		{
         	"name":"B"
         },
         {
@@ -65,33 +68,38 @@ config.sections.map(function(item, k){
 	i_config['sections'][item.name] = {
 		"remove" : item.remove ? true : false,
 		"rename" : item.rename ? true : false,
-		"keepContent" : item.keepContent ? true : false		
-	};
-});
-
-i_config['paragraphs'] = {};
-config.paragraphs.map(function(item, k){
-	i_config['sections'][item.name] = {
-		"remove" : item.remove ? true : false,
-		"rename" : item.rename ? true : false,
 		"keepContent" : item.keepContent ? true : false,
 		"paragraphs" : item.paragraphs ? item.paragraphs : []
 	};
 });
 
+i_config['paragraphs'] = {};
+config.paragraphs.map(function(item, k){
+	i_config['paragraphs'][item.name] = {
+		"remove" : item.remove ? true : false,
+		"rename" : item.rename ? true : false,
+		"keepContent" : item.keepContent ? true : false,
+		"inlines" : item.inlines ? item.inlines : []
+	};
+});
+
 var isParagraph = function isParagraph(node) {
-	return (i_config['sections'].indexOf(node.nodeName) > -1);
+	return (i_config['paragraphs'][node.nodeName] !== undefined);
 };
 
 var isSection = function isSection(node) {
-	return (i_config['paragraphs'].indexOf(node.nodeName) > -1);
+	return (i_config['sections'][node.nodeName] !== undefined);
 };
 
 var isInline = function isInline(node, paragraph) {
-	return (i_config['paragraphs'][paragraphs]['inlines'].indexOf(node.nodeName) > -1);	
+	return (i_config['paragraphs'][paragraph]['inlines'].indexOf(node.nodeName) > -1);	
 };
 
-var sectionize = function sectionize(rootNode, section) {
+var build = function build(node) {
+	return sectionize(node);
+}
+
+var sectionize = function sectionize(rootNode) {
 	return [].slice.apply(rootNode.childNodes).reduce(function(mDoc, node, i, nodeSet){
 		if(isSection(node)) {
 			var section = new SECTION(node.nodeName, i_config);
@@ -103,43 +111,44 @@ var sectionize = function sectionize(rootNode, section) {
 				targetNode = document.createDocumentFragment();
 
 			for(var k = rel_id; setSize >= k && !isSection(nodeSet[k]); k++) {
-				frag.appendChild(nodeSet[k]);
+				frag.appendChild(nodeSet[k].cloneNode(true));
 				rel_i++;
 			}
 			nodeSet.splice(i, rel_i);
 		}
 
-		for (var p in paragraphize(targetNode, node)) {
-			section.appendParagraph(p);
+		var paragraphs = paragraphize(targetNode, node);
+		for (var p in paragraphs) {
+			section.appendParagraph(paragraphs[p]);
 		}	
 		mDoc.appendSection(section);
 
 		return mDoc;
-	}, new DOCUMENT(i_config));
+	}, new DOC(i_config));
 };
 
-var paragraphize = function paragraphize(targetNode, rootNode) {
+var paragraphize = function paragraphize(rootNode) {
 	return [].slice.apply(rootNode.childNodes).map(function(node) {
 		if(isParagraph(node)){
 			var paragraph = new PARAGRAPH(node.nodeName, i_config),
 				targetNode = node;
-
 		} else {
 			var paragraph = new PARAGRAPH(i_config['defaultParagraph'], i_config),
 				setSize = nodeSet.length,
 				targetNode = document.createDocumentFragment();
 
 			for(var k = rel_id; setSize >= k && !isParagraph(nodeSet[k]); k++) {
-				frag.appendChild(nodeSet[k]);
+				frag.appendChild(nodeSet[k].cloneNode(true));
 				rel_i++;
 			}
 		}
 
-		for (var i in inlinize(targetNode, paragraph._role)) {
-			section.appendParagraph(i);
+		var inlines = inlinize(targetNode, paragraph._role);
+		for (var i in inlines) {
+			paragraph.appendInline(inlines[i]);
 		}
 
-		return section;
+		return paragraph;
 	});
 }
 
@@ -148,22 +157,39 @@ var inlinize = function inlinize(rootNode, paragraphNodeName){
 	//STEPS: 00;01;02
 	var targetNode = prepareInlines(rootNode, paragraphNodeName);
 	var stacks = getStacks(targetNode);
-	console.log(stacks);
-		
-	//STEP 03 - JOIN IDENTICAL SIBLINGS IN STACK
-
+	return stacks.map(function mapStacks(stack){
+		return stack.reduce(function(accum, current){
+			if(typeof current.appendInline == 'function'){
+				current.appendInline(accum);
+				return current;
+			}
+			return accum;
+		})
+	});
 }
 
 var prepareInlines = function prepareInlines(rootNode, paragraphNodeName) {
-	return [].slice.apply(rootNode.childNodes).reduce(function(mDoc, node)) {
+	return [].slice.apply(rootNode.childNodes).reduce(function(docFrag, node) {
 		if(node.nodeName == '#text') {
 			var targetNode = node;
 		} else if(isInline(node, paragraphNodeName)) {
-			var targetNode = prepareInlines(node);
+			var targetNode = document.createElement(node.nodeName);
+			targetNode.appendChild(prepareInlines(node, paragraphNodeName));
+		} else {
+			var targetNode = document.createDocumentFragment();
+			var childNodes = [].slice.apply(node.childNodes)
+			for(var i in childNodes) {
+				targetNode.appendChild(prepareInlines(childNodes[i], paragraphNodeName));
+			}
 		}
-		
-		return mDoc.appendChild(targetNode);
+
+		docFrag.appendChild(targetNode.cloneNode(true));
+		return docFrag;
 	}, document.createDocumentFragment());
+}
+
+var build = function build(rootNode) {
+	return sectionize(rootNode);
 }
 
 var randomId = (function (){ 
@@ -238,12 +264,11 @@ var DOC = function DOCUMENT(_config){
 
 var SECTION = function SECTION(_role, _config) {
 
-	if(_config.removes[_role]) {
+/*	if(_config.removes[_role]) {
 		return false;
-	}
+	}*/
 
-	this._id = randomId();
-	this._class = _class;
+	this._id = randomId();	
 	this._role = _role;
 	this._config = _config;
 
@@ -313,12 +338,11 @@ var SECTION = function SECTION(_role, _config) {
 
 var PARAGRAPH = function PARAGRAPH(_role, _config) {
 
-	if(_config.removes[_role]) {
+	/*if(_config.removes[_role]) {
 		return false;
-	}
+	}*/
 
 	this._id = randomId();
-	this._class = _class;
 	this._role = _role;
 	this._config = _config;
 
@@ -332,50 +356,62 @@ var PARAGRAPH = function PARAGRAPH(_role, _config) {
 			return element.appendChild(inline.render());
 		});
 
-		return element;
+		var frag = document.createDocumentFragment();
+		frag.appendChild(element);
+		return frag;
 	};
 
-	this.appendInline = function appendInline(paragraph) {
+	this.appendInline = function appendInline(inline) {
 		//@todo check config for inserts, renames and removal
-		this._inlines.push(paragraph);
+		this._inlines.push(inline);
 	};
 };
 
 var INLINE = function INLINE(_node, _config) {
 	this._id = randomId();
-	/*this._class = _class;
-	this._role = _role;
-	this._style = []*/
 	this._weight = _config['inlines'][_node.nodeName]['priority'];
 	this._role = _node.nodeName;
-	//this._content = _content;
 
-	function applyStylings() {
-
-	}
-
-	this.appendChild = function appendChild(inline) {
-		
+	if(_node.nodeName == '#text') {
+		this._content = _node.textContent;
+	} else {
+		this._inlines = [];	
+		this.appendInline = function appendInline(inline) {
+			this._inlines.push(inline);
+		}
 	}
 
 	this.render = function renderInline(){
+		var frag = document.createDocumentFragment();
+		if(this._content) {
+			var targetNode = document.createTextNode(this._content);
+		} else {
+			var targetNode = document.createElement(this._role);
+			for(var i in this._inlines) {
+				targetNode.appendChild(this._inlines[i].render());
+			}
+		}
 
-		return document.createTextNode(this._role);
+		frag.appendChild(targetNode);
+
+		return frag;
 	}
 };
 
 
 function getStacks(root) {
 	root.id = "root";
-    var nodes = root.querySelectorAll('*'),
-        result;
+    var result;
 
     //STEP 00 - Identify all the leave nodes
-    var leaves = [].slice.apply(nodes).filter(function(i) {
-        return i.childNodes.length === 1 && i.firstChild.nodeType === 3;
-    }).map(function(node){
-        return node.firstChild;
-    }); //w*h
+    var leaves = (function domwalker() {
+	  var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+	  var textNodes = [];
+	  while (walker.nextNode()) {
+	    textNodes.push(walker.currentNode);
+	  }
+	  return textNodes;
+	})();
     
     function upTop(node, stack) {
         return (node.parentNode.id === "root" || !node.parentNode) ? 
