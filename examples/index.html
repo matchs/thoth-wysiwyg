@@ -1,54 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
+	<meta charset="utf-8">
 	<script src="../dist/thoth-wysiwyg-0.1.0-nightly.js" type="text/javascript" charset="utf-8"></script>
-	<title></title>
+	<title>Teste - Modelo padronização DOM - Mateus Chagas Sousa</title>
+  	<link rel="stylesheet" href="http://code.jquery.com/qunit/qunit-1.16.0.css">
+  	<script src="http://code.jquery.com/qunit/qunit-1.16.0.js"></script>
 </head>
 <body>
-	<div id="content">
-	</div>
-
-	<div>
-	  <ul>
-	    <li>One</li>
-	    <li>Two</li>
-	  </ul>
-	  <div>
-	    <p id="foo">Paragraph</p>
-	    <div>
-	      <b>
-	        <i>Text</i>
-	      </b>
-	      <u>Underline</u>
-	    </div>
-	  </div>
-	</div>
-
-	<p id="root">
-	  I am not in danger, <b>Skyler</b>. <b><u>I am <i>the danger</i></u></b>.
-	</p>
-
-	
-
+	<div id="doc1"><div id="sec1"><p id="root">I am not in danger, <b>Skyler</b>. <b><u>I am <i>the danger</i></u></b>.</p></div></div>
+	<div id="qunit"></div>
+  	<div id="qunit-fixture"></div>
 </body>
-<script>
-	/*var $editor = document.getElementById('editor');
-	var doc = new DOC();
 
-	var s = new SECTION('section');
-	var p = new PARAGRAPH('p');
-	var p2 = new PARAGRAPH('p');
-	
-	p.appendInline(new INLINE('#txt-node', "That's a test!"));
-	p2.appendInline(new INLINE('#txt-node', "That's another paragraph"));
-	s.appendParagraph(p);
-	s.appendParagraph(p2);
-	doc.appendSection(s)
-	var content = doc.render();
-
-	document.getElementById('content').appendChild(content);*/
-
-	buildTree(document.getElementById('root'));
-
-</script>
+<script src="../tests/base_tests.js"></script>
+<!--<script>
+	var inline = inlinize(document.getElementById('root'), 'P');
+	var paragraph = paragraphize(document.getElementById('para1'));
+	var section = sectionize(document.getElementById('sec1'));
+</script>-->
 </html>
