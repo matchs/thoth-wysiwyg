@@ -398,55 +398,56 @@ var INLINE = function INLINE(_node, _config) {
 	}
 };
 
+function getAllLeaveNodes(root) {
+	var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+	var textNodes = [];
+	while (walker.nextNode()) {
+		textNodes.push(walker.currentNode);
+	}
+	return textNodes;
+}
 
 function getStacks(root) {
 	root.id = "root";
     var result;
 
     //STEP 00 - Identify all the leave nodes
-    var leaves = (function domwalker() {
-	  var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
-	  var textNodes = [];
-	  while (walker.nextNode()) {
-	    textNodes.push(walker.currentNode);
-	  }
-	  return textNodes;
-	})();
+    var leaves = getAllLeaveNodes(root);
     
-    function upTop(node, stack) {
-        return (node.parentNode.id === "root" || !node.parentNode) ? 
-        	sortedInsert(new INLINE(node, i_config), stack) : upTop(node.parentNode, sortedInsert(new INLINE(node, i_config), stack));
-    }
-
-    function sortedInsert(element, array) {
-    	if(array.length === 0)
-    		array.push(element);
-    	else 
-			array.splice(locationOf(element, array) + 1, 0, element);
-
-		return array;
-	}
-
-    function locationOf(element, array, start, end) {
-		start = start || 0;
-		end = end || array.length;
-		var pivot = parseInt(start + (end - start) / 2, 10);
-
-		if (array[pivot]._weight === element._weight) return pivot;
-
-		if (end - start <= 1)
-			return array[pivot]._weight > element ? pivot - 1 : pivot;
-
-		if (array[pivot]._weight < element._weight) {
-			return locationOf(element, array, pivot, end);
-		} else {
-			return locationOf(element, array, start, pivot);
-		}
-	}   
-
 	//STEP 01 - Traverse each leave node in order and then track its ascendance back up to the root. 
 	//STEP 02 - Order each stack accordingly to the config
     return leaves.map(function (node){
         return upTop(node, []);
     });
 }
+
+function upTop(node, stack) {
+    return (node.parentNode.id === "root" || !node.parentNode) ? 
+    	sortedInsert(new INLINE(node, i_config), stack) : upTop(node.parentNode, sortedInsert(new INLINE(node, i_config), stack));
+}
+
+function sortedInsert(element, array) {
+	if(array.length === 0)
+		array.push(element);
+	else 
+		array.splice(locationOf(element, array) + 1, 0, element);
+
+	return array;
+}
+
+function locationOf(element, array, start, end) {
+	start = start || 0;
+	end = end || array.length;
+	var pivot = parseInt(start + (end - start) / 2, 10);
+
+	if (array[pivot]._weight === element._weight) return pivot;
+
+	if (end - start <= 1)
+		return array[pivot]._weight > element ? pivot - 1 : pivot;
+
+	if (array[pivot]._weight < element._weight) {
+		return locationOf(element, array, pivot, end);
+	} else {
+		return locationOf(element, array, start, pivot);
+	}
+} 
